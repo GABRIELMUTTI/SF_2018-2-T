@@ -1,3 +1,5 @@
+open Syntax
+
 type result = Vnum of int
             | Vbool of bool                               
             | Vpair of result * result
@@ -7,4 +9,4 @@ type result = Vnum of int
             | Vrclos of variable * variable * expr * env
             | RRaise
 and  
-     env = (variable * result) list
+env = (variable * result) list
