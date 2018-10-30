@@ -3,3 +3,8 @@ all: syntax.ml results.ml evaluator.ml
 
 run: Evaluator 
 	./Evaluator
+
+clean:
+	rm *.cmi
+	rm *.cmx
+	rm *.o
