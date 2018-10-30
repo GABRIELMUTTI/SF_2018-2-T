@@ -1,14 +1,18 @@
 open Syntax
 open Results
 
-let big_step env expr = match expr with
-    (* Case Value: checks if expr is a value. *)
+exception NoRuleApplies
+   
+let big_step expr = match expr with
+    
+    (* Case Vnum: checks if expr is a value. *)
     Vnum(expr) -> expr
-  | _ -> 0
+  | _ -> raise NoRuleApplies
 
 let main () =
-  let e = Vnum(1) in
-  big_step [] e
+  try
+    big_step (Vbool(true))
+  with
+    NoRuleApplies -> Printf.printf "Evaluation halted: no rule applies for some subexpression.\n"
 
-
-let _ = Printf.printf "%d" main ()
+let _ = main ()
