@@ -1,17 +1,24 @@
 open Syntax
 open Results
-       
+     
+type expType = TyBool 
+			| TyNat  
+			|TyImplication of expType * expType
+			
+type typeVar = (int * expType)
 
-let rec typeInfer env expr = match expr with
-    
+type typeEquation= TyAssign of typeVar * expType
+
+let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let typeEnv = (expr * extType) list*)
+	match expr with
     (* Rule SUM *)
-	(e1 Sum e2)->let (t1, c1) = collect(env, e1) in 
-        let (t2, c2) = collect(env, e2) in 
-        env.add(e1 Sum e2, TyInt);
-        C=c1;
-		C.append(c2);
-        C.add(t1,TyInt);
-        C.add(t2,TyInt);
+	Binop(Sum, e1, e2)->let (t1, c1) = collect typeEnv e1 in 
+        let (t2, c2) = collect typeEnv, e2 in 
+		let typeEnv= (Binop(Sum, e1, e2), TyNat)::typeEnv in (*return type of expression later*)
+        let C=c1 in
+		let C=c2@c1 in
+		let C=TyAssign(t1,TyNat)::C in
+        let C=TyAssign(t2,TyNat)::C in(*let C=[TyAssign(t1,TyNat);TyAssign(t2,TyNat)] in*)
+		(TyNat,C)
                 
-  (* Rule BS-BOOL *)
-  | Vbool(expr) -> expr
+
