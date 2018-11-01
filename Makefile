@@ -4,6 +4,8 @@ all: syntax.ml results.ml evaluator.ml
 run: Evaluator 
 	./Evaluator
 
+brun: all run
+
 clean:
 	rm *.cmi
 	rm *.cmx
