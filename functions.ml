@@ -1,5 +1,55 @@
 open Syntax
 
+(* Calculates nth fibonacci number using a naive algorithm. *)
+let l1_naive_fib () =
+  Lrec("fib",
+       "n",
+       If(Binop(Eq,
+                Var("n"),
+                Ncte(0)),
+          Ncte(1),
+          If(Binop(Eq,
+                   Var("n"),
+                   Ncte(1)),
+             Ncte(1),
+             Binop(Sum,
+                   App(Var("fib"),
+                       Binop(Sub,
+                             Var("n"),
+                             Ncte(1))),
+                   App(Var("fib"),
+                       Binop(Sub,
+                             Var("n"),
+                             Ncte(2)))))),
+       Var("fib"))
+
+let l1_fast_fib () =
+  Lam("n",
+      Let("val",
+          Ncte(1),
+          Let("prev",
+              Ncte(0),
+              Lrec("fib",
+                   "n",
+                   If(Binop(Eq,
+                            Var("n"),
+                            Ncte(0)),
+                      Binop(Sum,
+                            Var("val"),
+                            Var("prev")),
+                      Let("tmp",
+                          Var("val"),
+                          Let("val",
+                              Binop(Sum,
+                                    Var("val"),
+                                    Var("prev")),
+                              Let("prev",
+                                  Var("val"),
+                                  App(Var("fib"),
+                                      Binop(Sub,
+                                            Var("n"),
+                                            Ncte(1))))))),
+                     Var("fib")))))
 (* Decrements a number until it reaches zero. *)
 let l1_sub_till_zero () =
   Lam("n",

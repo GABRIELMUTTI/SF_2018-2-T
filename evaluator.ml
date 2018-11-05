@@ -17,7 +17,14 @@ let rec get_value env var = match env with
      else
        get_value tl var
   | _ -> raise (UndefinedVariable var)
-    
+
+
+(* Executes a generic binary operation. *)
+let generic_binop op v1 v2 =
+  match op with
+  | Eq -> Vbool(v1 == v2)
+  | Df -> Vbool(v1 != v2)
+  | _ -> raise NoRuleApplies
 
 (* Executes a numerical binary operation. *)
 let numerical_binop op n1 n2 =
@@ -34,21 +41,16 @@ let numerical_binop op n1 n2 =
   | Ge -> Vbool(n1 >= n2)
   | Lt -> Vbool(n1 < n2)
   | Le -> Vbool(n1 <= n2)
-  | _ -> raise NoRuleApplies
+  | _ -> generic_binop op n1 n2
 
 (* Executes a boolean binary operation. *)
 let boolean_binop op b1 b2 =
   match op with
   | And -> Vbool(b1 && b2)
   | Or -> Vbool(b2 || b2)
-  | _ -> raise NoRuleApplies
+  | _ -> generic_binop op b1 b2
 
-(* Executes a generic binary operation. *)
-let generic_binop op v1 v2 =
-  match op with
-  | Eq -> Vbool(v1 == v2)
-  | Df -> Vbool(v1 != v2)
-  | _ -> raise NoRuleApplies
+
 
 (* Big-Step function. *)
 let rec big_step (env : (variable * result) list ) expr = match expr with
@@ -128,10 +130,8 @@ let rec big_step (env : (variable * result) list ) expr = match expr with
      | Vbool(b1), Vbool(b2) -> boolean_binop op b1 b2
      | RRaise, _ -> RRaise
      | _, RRaise -> RRaise
-     | _ -> generic_binop op v1 v2)
-        
-  
-          
+     | _ -> raise NoRuleApplies)
+     
   (* Cons(e1, e2) *)
   | Cons(e1, e2) ->
      let v1 = big_step env e1 in
@@ -182,18 +182,16 @@ let rec big_step (env : (variable * result) list ) expr = match expr with
   (* No rule applies, raise exception. *)
   | _ -> raise NoRuleApplies
 
+
+
+
     
 (* Evaluates an expression and returns a result. *)
 let main () =
   try
-    let expr = l1_mapply () in
-    let list = Cons(Ncte(1), Cons(Ncte(2), Cons(Ncte(3), Cons(Ncte(4), Nil)))) in
-    big_step [] (App(App(expr,
-                         Lam("x",
-                             Binop(Mult,
-                                   Var("x"),
-                                   Ncte(8)))),
-                     list))
+    let expr = l1_factorial () in
+    big_step [] (App(expr, Ncte(10)))
+    
   with
     NoRuleApplies ->
      Printf.printf "Evaluation halted: no rule applies for some subexpression.\n";
