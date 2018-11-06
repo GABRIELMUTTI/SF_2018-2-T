@@ -159,3 +159,17 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 		let typeEquations= typeEquations@c2 in
 		(t2,typeEquations)
 
+let rec Unify sigma ctypeEquations =
+	if ctypeEquations = [] then 
+		[]
+	else
+		match List.hd ctypeEquations with
+		|(TyNat, TyNat) -> Unify sigma (List.tl ctypeEquations)
+		|(TyBool, TyBool) -> Unify sigma (List.tl ctypeEquations)
+		|(TyList(t1), TyList(t2)) -> Unify sigma (t1,t2)@(List.tl ctypeEquations)
+		|(TyImplication(t1, t2), TyImplication(t3, t4)) -> Unify sigma (t1,t3)@(t2,t4)@(List.tl ctypeEquations)
+		|(TyTuple(t1,t2), TyTuple(t3,t4)) ->  Unify sigma (t1,t3)@(t2,t4)@(List.tl ctypeEquations)
+		|
+		|
+		|
+		|(_,_)
