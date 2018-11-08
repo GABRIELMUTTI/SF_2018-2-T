@@ -3,6 +3,7 @@ open Results
   
 exception UndefinedVariableExpr of Syntax.expr
 
+
 type expType = TyBool 
 			| TyNat  
 			|TyImplication of expType * expType
@@ -163,13 +164,12 @@ let rec Unify sigma ctypeEquations =
 	if ctypeEquations = [] then 
 		[]
 	else
-		match List.hd ctypeEquations with
-		|(TyNat, TyNat) -> Unify sigma (List.tl ctypeEquations)
-		|(TyBool, TyBool) -> Unify sigma (List.tl ctypeEquations)
-		|(TyList(t1), TyList(t2)) -> Unify sigma (t1,t2)@(List.tl ctypeEquations)
-		|(TyImplication(t1, t2), TyImplication(t3, t4)) -> Unify sigma (t1,t3)@(t2,t4)@(List.tl ctypeEquations)
-		|(TyTuple(t1,t2), TyTuple(t3,t4)) ->  Unify sigma (t1,t3)@(t2,t4)@(List.tl ctypeEquations)
-		|
-		|
-		|
+		match ctypeEquations with
+		|(TyNat, TyNat)::tl -> Unify sigma tl
+		|(TyBool, TyBool)::tl -> Unify sigma tl
+		|(TyList(t1), TyList(t2))::tl -> Unify sigma (t1,t2)@tl
+		|(TyImplication(t1, t2), TyImplication(t3, t4))::tl -> Unify sigma (t1,t3)@(t2,t4)@tl
+		|(TyTuple(t1,t2), TyTuple(t3,t4))::tl ->  Unify sigma (t1,t3)@(t2,t4)@tl
+		|(x, x)::tl -> l
+		|(x, y)::tl -> 
 		|(_,_)
