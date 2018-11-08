@@ -209,10 +209,10 @@ let rec Unify sigma  (ctypeEquations: (expType * expType) list) =
   |(TyVariable(xTypeVar), t)::tl -> 
       if VerifyInside xTypeVar t 
         then raise UnifyTypeNotMeet
-        else Unify sigma@[(TyVariable(xTypeVar),t)] ChangeOccurrences xTypeVar t tl
+        else Unify sigma@[(TyVariable(xTypeVar),t)] (ChangeOccurrences xTypeVar t tl)
   |(t, TyVariable(xTypeVar))::tl ->
       if VerifyInside xTypeVar t 
         then raise UnifyTypeNotMeet
-        else Unify sigma@[(TyVariable(xTypeVar),t)] ChangeOccurrences xTypeVar t tl
+        else Unify sigma@[(TyVariable(xTypeVar),t)] (ChangeOccurrences xTypeVar t tl)
   |(_,_) -> raise UnifyTypeNotMeet
 
