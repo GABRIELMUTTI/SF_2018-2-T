@@ -2,6 +2,7 @@ open Syntax
 open Results
   
 exception UndefinedVariableExpr of Syntax.expr
+exception UnifyTypeNotMeet
 
 
 type expType = TyBool 
@@ -160,16 +161,58 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 		let typeEquations= typeEquations@c2 in
 		(t2,typeEquations)
 
-let rec Unify sigma ctypeEquations =
-	if ctypeEquations = [] then 
-		[]
-	else
-		match ctypeEquations with
-		|(TyNat, TyNat)::tl -> Unify sigma tl
-		|(TyBool, TyBool)::tl -> Unify sigma tl
-		|(TyList(t1), TyList(t2))::tl -> Unify sigma (t1,t2)@tl
-		|(TyImplication(t1, t2), TyImplication(t3, t4))::tl -> Unify sigma (t1,t3)@(t2,t4)@tl
-		|(TyTuple(t1,t2), TyTuple(t3,t4))::tl ->  Unify sigma (t1,t3)@(t2,t4)@tl
-		|(x, x)::tl -> l
-		|(x, y)::tl -> 
-		|(_,_)
+
+
+
+let rec VerifyInside (xTypeVar:int) (t: expType) =
+  match t with
+  |TyNat -> false
+  |TyBool -> false
+  |TyList(t1) -> VerifyInside xTypeVar t1 
+  |TyImplication(t1,t2) -> 
+      VerifyInside xTypeVar t1 || VerifyInside xTypeVar t2
+  |TyTuple(t1,t2) -> VerifyInside xTypeVar t1 || VerifyInside xTypeVar t2
+  |TyVariable(yTypeVar) -> xTypeVar = yTypeVar
+  |_ -> raise UnifyTypeNotMeet
+
+
+
+let rec change (varID: int) (t: expType) (element: expType) = 
+  match element with
+  |TyNat -> TyNat
+  |TyBool -> TyBool
+  |TyList(t1) -> TyList(change varID t t1)
+  |TyImplication(t1, t2) -> 
+      TyImplication((change varID t t1), (change varID t t2))
+  |TyTuple(t1, t2) -> 
+      TyTuple((change varID t t1), (change varID t t2))
+  |TyVariable(yVarID) -> if varID = yVarID then t else TyVariable(yVarID)
+  |_ -> raise UnifyTypeNotMeet
+
+
+let ChangeOccurrences (varID: int) (t:expType) (clist:(expType*expType)list) =
+  List.map (fun (element1, element2) -> 
+    ((change varID t element1),(change varID t element2))) clist
+
+
+
+let rec Unify sigma  (ctypeEquations: (expType * expType) list) =
+  match ctypeEquations with
+  |[] -> sigma
+  |(TyNat, TyNat)::tl -> Unify sigma tl
+  |(TyBool, TyBool)::tl -> Unify sigma tl
+  |(TyList(t1), TyList(t2))::tl -> Unify sigma (t1,t2)::tl
+  |(TyImplication(t1, t2), TyImplication(t3, t4))::tl -> 
+                                   Unify sigma (t1,t3)::(t2,t4)::tl
+  |(TyTuple(t1,t2), TyTuple(t3,t4))::tl ->  
+                                   Unify sigma (t1,t3)::(t2,t4)::tl
+  |(TyVariable(xTypeVar), t)::tl -> 
+      if VerifyInside xTypeVar t 
+        then raise UnifyTypeNotMeet
+        else Unify sigma@[(TyVariable(xTypeVar),t)] ChangeOccurrences xTypeVar t tl
+  |(t, TyVariable(xTypeVar))::tl ->
+      if VerifyInside xTypeVar t 
+        then raise UnifyTypeNotMeet
+        else Unify sigma@[(TyVariable(xTypeVar),t)] ChangeOccurrences xTypeVar t tl
+  |(_,_) -> raise UnifyTypeNotMeet
+
