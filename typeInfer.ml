@@ -70,7 +70,7 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 	|If(e1,e2,e3)->let (t1, c1) = collect typeEnv e1 in 
         let (t2, c2) = collect typeEnv e2 in 
 		let (t3, c3) = collect typeEnv e3 in 
-		let typeEquations=[TyAssign(t1, TyBool);TyAssign(t1, t2)] in
+		let typeEquations=[TyAssign(t1, TyBool);TyAssign(t2, t3)] in
 		let typeEquations= typeEquations@c1 in
 		let typeEquations= typeEquations@c2 in
 		let typeEquations= typeEquations@c3 in
@@ -231,15 +231,22 @@ let rec get_type_str expType =
   | TyNat -> "nat"
   | TyImplication(t1, t2) -> "(" ^ (get_type_str t1) ^ " -> " ^ (get_type_str t2) ^ ")"
   | TyTuple(t1, t2) -> "(" ^ (get_type_str t1) ^ " * " ^ (get_type_str t2) ^ ")"
-  | TyVariable(value) -> "var " ^ (string_of_int value)
+  | TyVariable(value) -> "type var " ^ (string_of_int value)
   | TyList(t) -> (get_type_str t) ^ " list"
   | _ -> "error!"
+
+let rec print_type_equations equations =
+  match equations with
+  | [] -> ()
+  | TyAssign(t1, t2) :: tl ->
+     Printf.printf "%s = %s\n" (get_type_str t1) (get_type_str t2);
+     print_type_equations tl
+  | _ -> ()
                      
 let main () =
-  let expr = Functions.l1_naive_fib () in
+  let expr = Functions.l1_simple_function () in
   let (exprType, equations) = collect [] expr in
-  let unify_output = unify [] equations in
-  Printf.printf "%s" (get_type_str exprType); ()
+  print_type_equations equations
 
      
 let _ = main ()
