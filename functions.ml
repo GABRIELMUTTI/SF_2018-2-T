@@ -121,3 +121,9 @@ let l1_mapply () =
                    App(Var("mapply"),
                        (Tl(Var("list")))))),
            Var("mapply")))
+
+let l1_simple_function () =
+  Lam("x",
+      If(Var("x"),
+         Bcte(true),
+         Ncte(1)))

@@ -1,7 +1,9 @@
 open Syntax
 open Results
-  
+   
 exception UndefinedVariableExpr of Syntax.expr
+exception UnifyTypeNotMeet
+
 
 type expType = TyBool 
 			| TyNat  
@@ -68,7 +70,7 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 	|If(e1,e2,e3)->let (t1, c1) = collect typeEnv e1 in 
         let (t2, c2) = collect typeEnv e2 in 
 		let (t3, c3) = collect typeEnv e3 in 
-		let typeEquations=[TyAssign(t1, TyBool);TyAssign(t1, t2)] in
+		let typeEquations=[TyAssign(t1, TyBool);TyAssign(t2, t3)] in
 		let typeEquations= typeEquations@c1 in
 		let typeEquations= typeEquations@c2 in
 		let typeEquations= typeEquations@c3 in
@@ -159,3 +161,92 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 		let typeEquations= typeEquations@c2 in
 		(t2,typeEquations)
 
+
+
+
+let rec verifyInside (xTypeVar:int) (t: expType) =
+  match t with
+  |TyNat -> false
+  |TyBool -> false
+  |TyList(t1) -> verifyInside xTypeVar t1 
+  |TyImplication(t1,t2) -> 
+      verifyInside xTypeVar t1 || verifyInside xTypeVar t2
+  |TyTuple(t1,t2) -> verifyInside xTypeVar t1 || verifyInside xTypeVar t2
+  |TyVariable(yTypeVar) -> xTypeVar = yTypeVar
+  |_ -> raise UnifyTypeNotMeet
+
+
+
+let rec change (varID: int) (t: typeEquation) (element: expType) = 
+  match element with
+  |TyNat -> TyNat
+  |TyBool -> TyBool
+  |TyList(t1) -> TyList(change varID t t1)
+  |TyImplication(t1, t2) -> 
+      TyImplication((change varID t t1), (change varID t t2))
+  |TyTuple(t1, t2) -> 
+      TyTuple((change varID t t1), (change varID t t2))
+  |TyVariable(yVarID) ->
+    if varID = yVarID then
+      let TyAssign(t1, t2) = t in
+      t2
+    else
+      TyVariable(yVarID)
+  |_ -> raise UnifyTypeNotMeet
+
+
+let changeOccurrences (varID: int) (t:typeEquation) (clist:typeEquation list) =
+  List.map (fun (TyAssign(element1, element2)) -> 
+    TyAssign((change varID t element1),(change varID t element2))) clist
+
+
+
+let rec unify sigma  (ctypeEquations: typeEquation list) =
+  match ctypeEquations with
+  |[] -> sigma
+  |TyAssign((TyNat, TyNat))::tl -> unify sigma tl
+  |TyAssign((TyBool, TyBool))::tl -> unify sigma tl
+  |TyAssign((TyList(t1), TyList(t2)))::tl -> unify sigma (TyAssign(t1, t2)::tl)
+  |TyAssign((TyImplication(t1, t2)), TyImplication(t3, t4))::tl -> 
+                                   unify sigma (TyAssign((t1,t3))::(TyAssign((t2,t4))::tl))
+  |TyAssign((TyTuple(t1,t2), TyTuple(t3,t4)))::tl ->  
+                                   unify sigma (TyAssign((t1,t3))::TyAssign((t2,t4))::tl)
+  |TyAssign((TyVariable(xTypeVar), t))::tl -> 
+      if verifyInside xTypeVar t 
+        then raise UnifyTypeNotMeet
+      else
+        unify (sigma@[(TyVariable(xTypeVar),t)])
+          (changeOccurrences xTypeVar (TyAssign((TyVariable(xTypeVar), t))) tl)
+  |TyAssign((t, TyVariable(xTypeVar)))::tl ->
+      if verifyInside xTypeVar t 
+        then raise UnifyTypeNotMeet
+      else unify (sigma@[(TyVariable(xTypeVar),t)])
+             (changeOccurrences xTypeVar (TyAssign((TyVariable(xTypeVar), t))) tl)
+  |_ -> raise UnifyTypeNotMeet
+
+
+let rec get_type_str expType =
+  match expType with
+  | TyBool -> "bool"
+  | TyNat -> "nat"
+  | TyImplication(t1, t2) -> "(" ^ (get_type_str t1) ^ " -> " ^ (get_type_str t2) ^ ")"
+  | TyTuple(t1, t2) -> "(" ^ (get_type_str t1) ^ " * " ^ (get_type_str t2) ^ ")"
+  | TyVariable(value) -> "type var " ^ (string_of_int value)
+  | TyList(t) -> (get_type_str t) ^ " list"
+  | _ -> "error!"
+
+let rec print_type_equations equations =
+  match equations with
+  | [] -> ()
+  | TyAssign(t1, t2) :: tl ->
+     Printf.printf "%s = %s\n" (get_type_str t1) (get_type_str t2);
+     print_type_equations tl
+  | _ -> ()
+                     
+let main () =
+  let expr = Functions.l1_simple_function () in
+  let (exprType, equations) = collect [] expr in
+  print_type_equations equations
+
+     
+let _ = main ()
