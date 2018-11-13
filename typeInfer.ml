@@ -1,6 +1,6 @@
 open Syntax
 open Results
-  
+   
 exception UndefinedVariableExpr of Syntax.expr
 exception UnifyTypeNotMeet
 
@@ -164,20 +164,20 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 
 
 
-let rec VerifyInside (xTypeVar:int) (t: expType) =
+let rec verifyInside (xTypeVar:int) (t: expType) =
   match t with
   |TyNat -> false
   |TyBool -> false
-  |TyList(t1) -> VerifyInside xTypeVar t1 
+  |TyList(t1) -> verifyInside xTypeVar t1 
   |TyImplication(t1,t2) -> 
-      VerifyInside xTypeVar t1 || VerifyInside xTypeVar t2
-  |TyTuple(t1,t2) -> VerifyInside xTypeVar t1 || VerifyInside xTypeVar t2
+      verifyInside xTypeVar t1 || verifyInside xTypeVar t2
+  |TyTuple(t1,t2) -> verifyInside xTypeVar t1 || verifyInside xTypeVar t2
   |TyVariable(yTypeVar) -> xTypeVar = yTypeVar
   |_ -> raise UnifyTypeNotMeet
 
 
 
-let rec change (varID: int) (t: expType) (element: expType) = 
+let rec change (varID: int) (t: typeEquation) (element: expType) = 
   match element with
   |TyNat -> TyNat
   |TyBool -> TyBool
@@ -186,33 +186,60 @@ let rec change (varID: int) (t: expType) (element: expType) =
       TyImplication((change varID t t1), (change varID t t2))
   |TyTuple(t1, t2) -> 
       TyTuple((change varID t t1), (change varID t t2))
-  |TyVariable(yVarID) -> if varID = yVarID then t else TyVariable(yVarID)
+  |TyVariable(yVarID) ->
+    if varID = yVarID then
+      let TyAssign(t1, t2) = t in
+      t2
+    else
+      TyVariable(yVarID)
   |_ -> raise UnifyTypeNotMeet
 
 
-let ChangeOccurrences (varID: int) (t:expType) (clist:(expType*expType)list) =
-  List.map (fun (element1, element2) -> 
-    ((change varID t element1),(change varID t element2))) clist
+let changeOccurrences (varID: int) (t:typeEquation) (clist:typeEquation list) =
+  List.map (fun (TyAssign(element1, element2)) -> 
+    TyAssign((change varID t element1),(change varID t element2))) clist
 
 
 
-let rec Unify sigma  (ctypeEquations: (expType * expType) list) =
+let rec unify sigma  (ctypeEquations: typeEquation list) =
   match ctypeEquations with
   |[] -> sigma
-  |(TyNat, TyNat)::tl -> Unify sigma tl
-  |(TyBool, TyBool)::tl -> Unify sigma tl
-  |(TyList(t1), TyList(t2))::tl -> Unify sigma (t1,t2)::tl
-  |(TyImplication(t1, t2), TyImplication(t3, t4))::tl -> 
-                                   Unify sigma (t1,t3)::(t2,t4)::tl
-  |(TyTuple(t1,t2), TyTuple(t3,t4))::tl ->  
-                                   Unify sigma (t1,t3)::(t2,t4)::tl
-  |(TyVariable(xTypeVar), t)::tl -> 
-      if VerifyInside xTypeVar t 
+  |TyAssign((TyNat, TyNat))::tl -> unify sigma tl
+  |TyAssign((TyBool, TyBool))::tl -> unify sigma tl
+  |TyAssign((TyList(t1), TyList(t2)))::tl -> unify sigma (TyAssign(t1, t2)::tl)
+  |TyAssign((TyImplication(t1, t2)), TyImplication(t3, t4))::tl -> 
+                                   unify sigma (TyAssign((t1,t3))::(TyAssign((t2,t4))::tl))
+  |TyAssign((TyTuple(t1,t2), TyTuple(t3,t4)))::tl ->  
+                                   unify sigma (TyAssign((t1,t3))::TyAssign((t2,t4))::tl)
+  |TyAssign((TyVariable(xTypeVar), t))::tl -> 
+      if verifyInside xTypeVar t 
         then raise UnifyTypeNotMeet
-        else Unify sigma@[(TyVariable(xTypeVar),t)] (ChangeOccurrences xTypeVar t tl)
-  |(t, TyVariable(xTypeVar))::tl ->
-      if VerifyInside xTypeVar t 
+      else
+        unify (sigma@[(TyVariable(xTypeVar),t)])
+          (changeOccurrences xTypeVar (TyAssign((TyVariable(xTypeVar), t))) tl)
+  |TyAssign((t, TyVariable(xTypeVar)))::tl ->
+      if verifyInside xTypeVar t 
         then raise UnifyTypeNotMeet
-        else Unify sigma@[(TyVariable(xTypeVar),t)] (ChangeOccurrences xTypeVar t tl)
-  |(_,_) -> raise UnifyTypeNotMeet
+      else unify (sigma@[(TyVariable(xTypeVar),t)])
+             (changeOccurrences xTypeVar (TyAssign((TyVariable(xTypeVar), t))) tl)
+  |_ -> raise UnifyTypeNotMeet
 
+
+let rec get_type_str expType =
+  match expType with
+  | TyBool -> "bool"
+  | TyNat -> "nat"
+  | TyImplication(t1, t2) -> "(" ^ (get_type_str t1) ^ " -> " ^ (get_type_str t2) ^ ")"
+  | TyTuple(t1, t2) -> "(" ^ (get_type_str t1) ^ " * " ^ (get_type_str t2) ^ ")"
+  | TyVariable(value) -> "var " ^ (string_of_int value)
+  | TyList(t) -> (get_type_str t) ^ " list"
+  | _ -> "error!"
+                     
+let main () =
+  let expr = Functions.l1_naive_fib () in
+  let (exprType, equations) = collect [] expr in
+  let unify_output = unify [] equations in
+  Printf.printf "%s" (get_type_str exprType); ()
+
+     
+let _ = main ()
