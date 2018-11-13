@@ -106,8 +106,6 @@ let l1_factorial () =
                Pair(Ncte(1),
                     Var("n")))))
 
-let l1_raise () =
-  App(l1_factorial (), Raise)
 
 
 let l1_mapply () =
@@ -122,8 +120,21 @@ let l1_mapply () =
                        (Tl(Var("list")))))),
            Var("mapply")))
 
+
+let l1_rec_function () =
+  Lam("y",
+      Lrec("rec",
+           "x",
+           Binop(Sum,
+                 Var("x"),
+                 Var("y")),
+           Var("rec")))
+  
 let l1_simple_function () =
   Lam("x",
       If(Var("x"),
-         Bcte(true),
+         Ncte(0),
          Ncte(1)))
+
+let l1_raise () =
+  App(l1_simple_function (), Raise)

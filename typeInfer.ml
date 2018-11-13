@@ -3,7 +3,8 @@ open Results
    
 exception UndefinedVariableExpr of Syntax.expr
 exception UnifyTypeNotMeet
-
+exception TypeNotInSigma
+        
 
 type expType = TyBool 
 			| TyNat  
@@ -225,13 +226,44 @@ let rec unify sigma  (ctypeEquations: typeEquation list) =
   |_ -> raise UnifyTypeNotMeet
 
 
+let rec find_type_in_sigma sigma a_type =
+  match sigma with
+  | [] -> raise TypeNotInSigma
+  | (t1, t2) :: tl ->
+     if t1 = a_type then
+       t2
+     else
+       find_type_in_sigma tl a_type
+  
+      
+let rec apply_subs sigma expType =
+  match expType with
+  | TyNat -> TyNat
+  | TyBool -> TyBool
+  | TyImplication(t1, t2) ->
+     let t1_sub = apply_subs sigma t1 in
+     let t2_sub = apply_subs sigma t2 in
+     TyImplication(t1_sub, t2_sub)
+  | TyTuple(t1, t2) ->
+     let t1_sub = apply_subs sigma t1 in
+     let t2_sub = apply_subs sigma t2 in
+     TyTuple(t1_sub, t2_sub)
+  | TyList(t) ->
+     let t_sub = apply_subs sigma t in
+     TyList(t_sub)
+  | TyVariable(x) ->
+     try
+       find_type_in_sigma sigma x
+     with
+     | TypeNotInSigma -> TyVariable(x)
+
 let rec get_type_str expType =
   match expType with
   | TyBool -> "bool"
   | TyNat -> "nat"
   | TyImplication(t1, t2) -> "(" ^ (get_type_str t1) ^ " -> " ^ (get_type_str t2) ^ ")"
   | TyTuple(t1, t2) -> "(" ^ (get_type_str t1) ^ " * " ^ (get_type_str t2) ^ ")"
-  | TyVariable(value) -> "type var " ^ (string_of_int value)
+  | TyVariable(value) -> "T" ^ (string_of_int value)
   | TyList(t) -> (get_type_str t) ^ " list"
   | _ -> "error!"
 
@@ -242,11 +274,24 @@ let rec print_type_equations equations =
      Printf.printf "%s = %s\n" (get_type_str t1) (get_type_str t2);
      print_type_equations tl
   | _ -> ()
-                     
+
+let rec print_type_equations_alt equations =
+  match equations with
+  | [] -> Printf.printf "end\n"; ()
+  | (t1, t2) :: tl ->
+     Printf.printf "%s = %s\n" (get_type_str t1) (get_type_str t2);
+     print_type_equations_alt tl
+  | _ -> ()
+       
 let main () =
-  let expr = Functions.l1_simple_function () in
+  let expr = Functions.l1_rec_function () in
   let (exprType, equations) = collect [] expr in
-  print_type_equations equations
+  Printf.printf "Expected type: %s\n\n" (get_type_str exprType);
+  print_type_equations equations;
+  let unify_output = unify [] equations in
+  print_type_equations_alt unify_output
+  
+
 
      
 let _ = main ()
