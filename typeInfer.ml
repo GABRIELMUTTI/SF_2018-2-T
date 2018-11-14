@@ -1,16 +1,18 @@
 open Syntax
 open Results
+
    
 exception UndefinedVariableExpr of Syntax.expr
 exception UnifyTypeNotMeet
-
+exception TypeNotInSigma
+        
 
 type expType = TyBool 
-			| TyNat  
-			|TyImplication of expType * expType
-			|TyTuple of expType * expType
-			| TyVariable of int
-			|TyList of expType
+	     | TyNat  
+	     | TyImplication of expType * expType
+	     | TyTuple of expType * expType
+	     | TyVariable of int
+	     | TyList of expType
 			
 
 type typeEquation= TyAssign of expType * expType
@@ -173,7 +175,6 @@ let rec verifyInside (xTypeVar:int) (t: expType) =
       verifyInside xTypeVar t1 || verifyInside xTypeVar t2
   |TyTuple(t1,t2) -> verifyInside xTypeVar t1 || verifyInside xTypeVar t2
   |TyVariable(yTypeVar) -> xTypeVar = yTypeVar
-  |_ -> raise UnifyTypeNotMeet
 
 
 
@@ -192,7 +193,6 @@ let rec change (varID: int) (t: typeEquation) (element: expType) =
       t2
     else
       TyVariable(yVarID)
-  |_ -> raise UnifyTypeNotMeet
 
 
 let changeOccurrences (varID: int) (t:typeEquation) (clist:typeEquation list) =
@@ -225,28 +225,36 @@ let rec unify sigma  (ctypeEquations: typeEquation list) =
   |_ -> raise UnifyTypeNotMeet
 
 
-let rec get_type_str expType =
+
+      
+let rec find_type_in_sigma (sigma : (expType * expType) list) a_type =
+  match sigma with
+  | [] -> raise TypeNotInSigma
+  | (t1, t2) :: tl ->
+     if t1 = a_type then
+       t2
+     else
+       find_type_in_sigma tl a_type
+  
+    
+let rec apply_subs (sigma : (expType * expType) list) expType =
   match expType with
-  | TyBool -> "bool"
-  | TyNat -> "nat"
-  | TyImplication(t1, t2) -> "(" ^ (get_type_str t1) ^ " -> " ^ (get_type_str t2) ^ ")"
-  | TyTuple(t1, t2) -> "(" ^ (get_type_str t1) ^ " * " ^ (get_type_str t2) ^ ")"
-  | TyVariable(value) -> "type var " ^ (string_of_int value)
-  | TyList(t) -> (get_type_str t) ^ " list"
-  | _ -> "error!"
-
-let rec print_type_equations equations =
-  match equations with
-  | [] -> ()
-  | TyAssign(t1, t2) :: tl ->
-     Printf.printf "%s = %s\n" (get_type_str t1) (get_type_str t2);
-     print_type_equations tl
-  | _ -> ()
-                     
-let main () =
-  let expr = Functions.l1_simple_function () in
-  let (exprType, equations) = collect [] expr in
-  print_type_equations equations
-
-     
-let _ = main ()
+  | TyNat -> TyNat
+  | TyBool -> TyBool
+  | TyImplication(t1, t2) ->
+     let t1_sub = apply_subs sigma t1 in
+     let t2_sub = apply_subs sigma t2 in
+     TyImplication(t1_sub, t2_sub)
+  | TyTuple(t1, t2) ->
+     let t1_sub = apply_subs sigma t1 in
+     let t2_sub = apply_subs sigma t2 in
+     TyTuple(t1_sub, t2_sub)
+  | TyList(t) ->
+     let t_sub = apply_subs sigma t in
+     TyList(t_sub)
+  | TyVariable(x) ->
+     (try
+        let sub_x = find_type_in_sigma sigma (TyVariable(x)) in
+        apply_subs sigma sub_x
+      with
+      | TypeNotInSigma -> TyVariable(x))
