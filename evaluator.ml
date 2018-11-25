@@ -181,29 +181,3 @@ let rec big_step (env : (variable * result) list ) expr = match expr with
 
   (* No rule applies, raise exception. *)
   | _ -> raise NoRuleApplies
-
-
-
-
-    
-(* Evaluates an expression and returns a result. *)
-let main () =
-  try
-    let expr = l1_factorial () in
-    big_step [] (App(expr, Ncte(10)))
-    
-  with
-    NoRuleApplies ->
-     Printf.printf "Evaluation halted: no rule applies for some subexpression.\n";
-     RRaise
-  | UndefinedVariable(var) ->
-     let str = "Evaluation halted: undefined variable \"" ^ var ^ "\".\n" in
-     Printf.printf "%s" str;
-     RRaise
-     
-     
-(* Calls main and prints the result value. *)
-let _ =
-  let value = main () in
-  Printf.printf "%s\n" (result_to_string value)
-    
