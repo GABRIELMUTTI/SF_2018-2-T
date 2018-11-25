@@ -1,56 +1,28 @@
 open Syntax
 
 (* Calculates nth fibonacci number using a naive algorithm. *)
-let l1_naive_fib () =
-  Lam("x",
-      Lrec("fib",
-           "n",
-           If(Binop(Eq,
-                    Var("n"),
-                    Ncte(0)),
-              Ncte(1),
-              If(Binop(Eq,
-                       Var("n"),
-                       Ncte(1)),
-                 Ncte(1),
-                 Binop(Sum,
-                       App(Var("fib"),
-                           Binop(Sub,
-                                 Var("n"),
-                                 Ncte(1))),
-                       App(Var("fib"),
-                           Binop(Sub,
-                                 Var("n"),
-                                 Ncte(2)))))),
-           Var("fib")))
+let l1_fib () =
+  Lrec("fib",
+       "n",
+       If(Binop(Eq,
+                Var("n"),
+                Ncte(0)),
+          Ncte(0),
+          If(Binop(Eq,
+                   Var("n"),
+                   Ncte(1)),
+             Ncte(1),
+             Binop(Sum,
+                   App(Var("fib"),
+                       Binop(Sub,
+                             Var("n"),
+                             Ncte(1))),
+                   App(Var("fib"),
+                       Binop(Sub,
+                             Var("n"),
+                             Ncte(2)))))),
+       Var("fib"))
 
-let l1_fast_fib () =
-  Lam("n",
-      Let("val",
-          Ncte(1),
-          Let("prev",
-              Ncte(0),
-              Lrec("fib",
-                   "n",
-                   If(Binop(Eq,
-                            Var("n"),
-                            Ncte(0)),
-                      Binop(Sum,
-                            Var("val"),
-                            Var("prev")),
-                      Let("tmp",
-                          Var("val"),
-                          Let("val",
-                              Binop(Sum,
-                                    Var("val"),
-                                    Var("prev")),
-                              Let("prev",
-                                  Var("val"),
-                                  App(Var("fib"),
-                                      Binop(Sub,
-                                            Var("n"),
-                                            Ncte(1))))))),
-                     Var("fib")))))
 (* Decrements a number until it reaches zero. *)
 let l1_sub_till_zero () =
   Lam("n",
@@ -73,40 +45,35 @@ let l1_identity () =
       Var("x"))
 
 
-(* Returns the last argument of a list. *)
+(* Returns the last item of a list. *)
 let l1_last_element_list () =
-  Lrec("last_element_list",
-       "list",
-       If(IsEmpty(Tl(Var("list"))),
-          Hd(Var("list")),
-          App(Var("last_element_list"),
-              Tl(Var("list")))),
-       Var("last_element_list"))
+  Lrec("fun",
+       "l",
+       App(Var("fun"),
+           Tl(Var("l"))),
+       Var("fun"))
+
+
 
 (* Calculates the factorial of a number. *)
 let l1_factorial () =
-  Lam("n",
-      Lrec("aux",
-           "tuple",
-           Let("result",
-               Hd(Var("tuple")),
-               Let("current",
-                   Tl(Var("tuple")),
-                   If(Binop(Ge,
-                            Var("current"),
-                            Ncte(1)),
-                      App(Var("aux"),
-                          Pair(Binop(Mult,
-                                     Var("result"),
-                                     Var("current")),
-                               Binop(Sub,
-                                     Var("current"),
-                                     Ncte(1)))),
-                      Var("result")))),
-           App(Var("aux"),
-               Pair(Ncte(1),
-                    Var("n")))))
-
+  Lrec("fact",
+       "n",
+       If(Binop(Eq,
+                Var("n"),
+                Ncte(0)),
+          Ncte(1),
+          If(Binop(Eq,
+                   Var("n"),
+                   Ncte(1)),
+             Ncte(1),
+             Binop(Mult,
+                   Var("n"),
+                   App(Var("fact"),
+                       Binop(Sub,
+                             Var("n"),
+                             Ncte(1)))))),
+         Var("fact"))
 
 
 let l1_mapply () =
@@ -135,6 +102,12 @@ let l1_rec_function () =
                  Var("x"),
                  Var("y")),
            Var("rec")))
+
+let l1_rec () =
+  Lrec("test",
+       "x",
+       Var("x"),
+       Var("test"))
   
 let l1_simple_function () =
   Lam("x",

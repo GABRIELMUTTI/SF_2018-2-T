@@ -124,12 +124,13 @@ let rec collect (typeEnv : (expr * expType) list) (expr: Syntax.expr) = (*let ty
 		varID:= !varID+1;
 		(TyList(xTypeVar),[])
 		
-    | Cons(e1,e2)->let (t1, c1) = collect typeEnv e1 in 
-        let (t2, c2) = collect typeEnv e2 in 
-		let typeEquations=[TyAssign(TyList(t1),t2)] in
-		let typeEquations= typeEquations@c1 in
-		let typeEquations= typeEquations@c2 in
-		(t2,typeEquations)
+        | Cons(e1,e2)->
+           let (t1, c1) = collect typeEnv e1 in 
+           let (t2, c2) = collect typeEnv e2 in 
+	   let typeEquations=[TyAssign(TyList(t1),t2)] in
+	   let typeEquations= typeEquations@c1 in
+	   let typeEquations= typeEquations@c2 in
+	   (t2,typeEquations)
 		
     | IsEmpty(e1)-> let xTypeVar=TyVariable(!varID)in
 		varID:= !varID+1;
@@ -206,7 +207,7 @@ let rec unify sigma  (ctypeEquations: typeEquation list) =
   |[] -> sigma
   |TyAssign((TyNat, TyNat))::tl -> unify sigma tl
   |TyAssign((TyBool, TyBool))::tl -> unify sigma tl
-  |TyAssign((TyList(t1), TyList(t2)))::tl -> unify sigma (TyAssign(t1, t2)::tl)
+  |TyAssign((TyList(t1), TyList(t2)))::tl -> unify sigma (TyAssign((t1, t2))::tl)
   |TyAssign((TyImplication(t1, t2)), TyImplication(t3, t4))::tl -> 
                                    unify sigma (TyAssign((t1,t3))::(TyAssign((t2,t4))::tl))
   |TyAssign((TyTuple(t1,t2), TyTuple(t3,t4)))::tl ->  
