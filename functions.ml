@@ -44,17 +44,6 @@ let l1_identity () =
   Lam("x",
       Var("x"))
 
-
-(* Returns the last item of a list. *)
-let l1_last_element_list () =
-  Lrec("fun",
-       "l",
-       App(Var("fun"),
-           Tl(Var("l"))),
-       Var("fun"))
-
-
-
 (* Calculates the factorial of a number. *)
 let l1_factorial () =
   Lrec("fact",
@@ -75,38 +64,12 @@ let l1_factorial () =
                              Ncte(1)))))),
          Var("fact"))
 
-
-let l1_mapply () =
-  Lrec("mapply",
-       "fn",
-       Lam("list",
-           If(IsEmpty(Var("list")),
-              Nil,
-              Cons(App(Var("fn"),
-                       Hd(Var("list"))),
-                   App(App(Var("mapply"),
-                           Var("fn")),
-                       Tl(Var("list")))))),
-       Var("mapply"))
-
-let l1_list_if () =
-  If(Bcte(true),
-     Nil,
-     Cons(Bcte(false), Nil))
-
-let l1_rec_function () =
-  Lam("y",
-      Lrec("rec",
-           "x",
-           Binop(Sum,
-                 Var("x"),
-                 Var("y")),
-           Var("rec")))
-
 let l1_rec () =
   Lrec("test",
        "x",
-       Var("x"),
+       If(Var("x"),
+          Bcte(true),
+          Bcte(false)),
        Var("test"))
   
 let l1_simple_function () =

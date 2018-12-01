@@ -1,8 +1,8 @@
-all: syntax.ml results.ml support.ml functions.ml evaluator.ml typeInfer.ml main.ml
-	ocamlfind ocamlopt -o Evaluator syntax.ml results.ml support.ml functions.ml evaluator.ml typeInfer.ml main.ml
+all: syntax.ml results.ml functions.ml evaluator.ml typeInfer.ml support.ml main.ml
+	ocamlfind ocamlopt -o Program_T_SF syntax.ml results.ml functions.ml typeInfer.ml support.ml evaluator.ml main.ml
 
-run: Evaluator 
-	./Evaluator
+run: Program_T_SF 
+	./Program_T_SF
 
 brun: all run
 
